@@ -1,0 +1,45 @@
+# Android/Gradle
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/nav/
+.idea/assetWizardSettings.xml
+.idea/caches/
+.idea/vcs.xml
+.idea/misc.xml
+.idea/deploymentTargetDropDown.xml
+capture/
+*.apk
+*.aab
+
+# Keystore
+*.jks
+*.keystore
+keystore.properties
+
+# macOS
+.DS_Store
+
+# Xcode (if applicable)
+DerivedData/
+*.xcuserstate
+*.xcuserdatad
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# Misc
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
