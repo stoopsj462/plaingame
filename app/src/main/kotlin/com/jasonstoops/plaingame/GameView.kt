@@ -335,12 +335,12 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
         val lastPlatform = platforms.maxByOrNull { it.x }
         lastPlatformX = lastPlatform?.x ?: 0f
         badGuyX = lastPlatformX
-        badGuyY = (lastPlatform?.y ?: 2f) + 2f
+        badGuyY = lastPlatform?.y ?: 2f
 
         obstacles.clear()
         for (i in 0 until platforms.size step 2) {
             val p = platforms[i]
-            obstacles.add(PointF(p.x, p.y + 1f))
+            obstacles.add(PointF(p.x, p.y))
         }
     }
 
@@ -369,9 +369,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
         var mustStayCrouched = false
         if (moveDown && canJump && abs(velY) < 0.001f) {
             for (plat in platforms) {
-                val playerStandingTop = playerY + 1.2f
-                val platBottom = plat.y - 0.25f
-                if (abs(playerX - plat.x) < 3 && playerStandingTop > platBottom && playerY < platBottom) {
+                val platTop = plat.y
+                if (abs(playerX - plat.x) < 3 && playerY >= platTop && playerY < platTop + 0.5f) {
                     mustStayCrouched = true
                     break
                 }
@@ -391,16 +390,17 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
         var onPlatform = false
         for (plat in platforms) {
             val prevY = playerY
-            val platTop = plat.y + 0.5f
-            if (abs(playerX - plat.x) < 3.5f && abs(nextY - platTop) < 1.01f && velY <= 0 && prevY >= platTop) {
-                nextY = platTop + 1.0f
+            val platTop = plat.y 
+            if (abs(playerX - plat.x) < 3.5f && abs(nextY - platTop) < 0.5f && velY <= 0 && prevY >= platTop) {
+                nextY = platTop
                 velY = 0f; canJump = true; onPlatform = true
                 break
             }
-            val playerHeadY = nextY + 1.2f
+            val playerHeadY = nextY + 2.4f
+            val platBottom = plat.y - 0.5f
             if (abs(playerX - plat.x) < 3.5f && velY > 0 &&
-                playerHeadY > plat.y - 0.25f && playerY + 1.2f <= plat.y - 0.25f) {
-                nextY = plat.y - 0.25f - 1.2f
+                playerHeadY > platBottom && playerY + 2.4f <= platBottom) {
+                nextY = platBottom - 2.4f
                 velY = 0f
             }
         }
@@ -418,33 +418,29 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
         var blocked = false
         val crouching = (moveDown || mustStayCrouched) && canJump && abs(velY) < 0.001f
         for (plat in platforms) {
-            val playerHeight = if (crouching) 0.7f else 1.2f
-            val playerBottom = playerY
-            val playerTop = playerY + playerHeight
-            val platBottom = plat.y - 0.25f
-            val platTop = plat.y + 0.25f
+            val playerHeight = if (crouching) 1.2f else 2.4f
+            val playerBottom = nextY
+            val playerTop = nextY + playerHeight
+            val platBottom = plat.y - 0.5f
+            val platTop = plat.y
             if (playerTop > platBottom && playerBottom < platTop) {
                 val platLeft = plat.x - 3
                 val platRight = plat.x + 3
                 if (nextX + 0.5f > platLeft && nextX - 0.5f < platRight) {
-                    if (crouching && playerTop <= platBottom + 0.1f && playerY <= platBottom) {
-                        continue
-                    } else {
-                        blocked = true
-                        break
-                    }
+                    blocked = true
+                    break
                 }
             }
         }
         for (o in obstacles) {
-            if (abs(nextX - o.x) < 1 && abs(playerY - o.y) < 2) {
+            if (abs(nextX - o.x) < 1 && abs(playerY - o.y) < 1) {
                 blocked = true
                 break
             }
         }
         if (!blocked) playerX = nextX
 
-        playerY = if (crouching) nextY - 0.5f else nextY
+        playerY = nextY
 
         if (playerY < -10 || playerX < -70 || playerX > 70) {
             resetPlayerToStart()
@@ -539,8 +535,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
                 var nextY = barrel.y + barrel.vy
                 var bounced = false
                 for (plat in platforms) {
-                    if (abs(barrel.x - plat.x) < 3.5f && barrel.y >= plat.y + 0.5f && nextY <= plat.y + 1.2f) {
-                        nextY = plat.y + 1.2f
+                    if (abs(barrel.x - plat.x) < 3.5f && barrel.y >= plat.y && nextY <= plat.y) {
+                        nextY = plat.y
                         barrel.vy = 0.4f + random.nextFloat() * 0.2f
                         bounced = true
                         break
@@ -685,19 +681,19 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
 
             // Draw platforms
             for (p in platforms) {
-                val rect = getRect(p.x, p.y, 6.0f, 0.5f)
+                val rect = getRect(p.x, p.y - 0.25f, 6.0f, 0.5f)
                 canvas.drawRoundRect(rect, 6f * S / 40f, 6f * S / 40f, platformPaint)
             }
 
             // Draw obstacles
             for (o in obstacles) {
-                val rect = getRect(o.x, o.y, 1.0f, 1.0f)
+                val rect = getRect(o.x, o.y + 0.5f, 1.0f, 1.0f)
                 canvas.drawRoundRect(rect, 3f * S / 40f, 3f * S / 40f, obstaclePaint)
             }
 
             // Draw bad guy (stationary barrel-thrower NPC on the last platform)
             playerSheets["badguy"]?.let { badGuySheet ->
-                val bgRect = getRect(badGuyX, badGuyY, 2.0f, 2.0f)
+                val bgRect = getRect(badGuyX, badGuyY + 1.0f, 2.0f, 2.0f)
                 drawBitmapFrame(canvas, badGuySheet, badGuyFrame, bgRect)
             }
 
@@ -733,7 +729,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback,
             // Draw barrels (rolling drum shape, matching the original)
             for (barrel in barrels) {
                 canvas.save()
-                canvas.translate((barrel.x - camX) * S, -(barrel.y - camY) * S)
+                canvas.translate((barrel.x - camX) * S, -(barrel.y + 0.7f - camY) * S)
                 canvas.rotate(Math.toDegrees(barrel.rotation.toDouble()).toFloat())
                 canvas.drawCircle(0f, 0f, 0.7f * S, barrelBodyPaint)
                 canvas.drawCircle(0f, 0f, 0.7f * S, barrelStrokePaint)
